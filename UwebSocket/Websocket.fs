@@ -24,12 +24,12 @@ let upgradeWebsocket (onSession: Types.Session -> unit) (requestSession: Request
     let headers = headers.Add ("Connection", "Upgrade")
     let headers = headers.Add ("Upgrade", "websocket")
     let headers = headers.Add ("Sec-WebSocket-Accept", base64Key)
-    // TODO: Deflate
-    // let headers = 
-    //     if extensions |> Array.contains "permessage-deflate" then
-    //         headers.Add ("Sec-WebSocket-Extensions", "permessage-deflate; client_no_context_takeover")
-    //     else
-    //         headers
+    
+    let headers = 
+        if extensions |> Array.contains "permessage-deflate" then
+            headers.Add ("Sec-WebSocket-Extensions", "permessage-deflate; client_no_context_takeover")
+        else
+            headers
 
     let headerBytes = Response.createHeader responseData headers 101 "Switching Protocols" None
     do! requestData.session.networkStream.AsyncWrite (headerBytes, 0, headerBytes.Length)    

@@ -4,10 +4,12 @@ open Types
 open System
 open System.Buffers.Binary
 open System.Text
+open System.IO.Compression
 
 let rec start (networkStream: Stream) =
     async { 
         let! buffer = networkStream.AsyncRead 2
+        // TODO: EndofStreamException
         // TODO: buffer.length = 0: Connection Closed
         let fin = buffer.[0] &&& 0x80uy = 0x80uy
         let deflated = buffer.[0] &&& 0x40uy = 0x40uy
@@ -55,8 +57,19 @@ let rec start (networkStream: Stream) =
         if fin then
             // TODO: if ping SendPong(receivedStream.Payload)
             if opcode = Opcode.Text then
+                let buffer =
+                    if deflated then
+                        let ms = new MemoryStream (buffer, 0, buffer.Length)
+                        let uncompressd = new MemoryStream ()
+                        let compressedStream = new DeflateStream (ms, CompressionMode.Decompress, true)
+                        compressedStream.CopyTo uncompressd
+                        compressedStream.Close ()
+                        uncompressd.Capacity <- int uncompressd.Length
+                        uncompressd.GetBuffer ()
+                    else
+                        buffer
                 printfn "Die Wagenladung: %s" <| Encoding.Default.GetString buffer
-            else
+            else if opcode = Opcode.Ping then
                printfn "Ping"
             
         start networkStream
