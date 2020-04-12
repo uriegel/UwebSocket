@@ -3,8 +3,9 @@ open System.IO
 open Types
 open System
 open System.Buffers.Binary
+open System.Text
 
-let start (networkStream: Stream) =
+let rec start (networkStream: Stream) =
     async { 
         let! buffer = networkStream.AsyncRead 2
         // TODO: buffer.length = 0: Connection Closed
@@ -15,7 +16,7 @@ let start (networkStream: Stream) =
         | Opcode.Close -> () // TODO: close ()
         | Opcode.Ping | Opcode.Pong | Opcode.Text | Opcode.ContinuationFrame -> ()
         | _ -> () // TODO: close ()
-        let mask = buffer.[1] >>> 7
+        let mask = buffer.[1] >>> 7 = 1uy
         let lengthCode = buffer.[1] &&& ~~~0x80uy
         let! length = async {
             match lengthCode with
@@ -35,58 +36,30 @@ let start (networkStream: Stream) =
                 return 0L
             | _ -> return 0L // TODO: close ()
         }
-        
 
-        printfn "Länge: %d" (int length)
+        let! key = async {
+            match mask with
+            | true -> 
+                let! buffer = networkStream.AsyncRead 4
+                return Some buffer
+            | false -> return None
+        }
 
-// 			if (length < 126)
-// 			{
-// 				if (mask == 1)
-// 					read += Read(headerBuffer, read, 4);
-// 			}
-// 			else if (length == 126)
-// 			{
-// 				// If length is 126, the following 2 bytes (16-bit unsigned integer), if 127, the following 8 bytes (64-bit unsigned integer) are the length.
-// 				read += Read(headerBuffer, read, mask == 1 ? 6 : 2);
-// 				var ushortbytes = new byte[2];
-// 				ushortbytes[0] = headerBuffer[3];
-// 				ushortbytes[1] = headerBuffer[2];
-// 				length = BitConverter.ToUInt16(ushortbytes, 0);
-// 			}
-// 			else if (length == 127)
-// 			{
-// 				// If length is 127, the following 8 bytes (64-bit unsigned integer) is the length of message
-// 				read += Read(headerBuffer, read, mask == 1 ? 12 : 8);
-// 				var ulongbytes = new byte[8];
-// 				ulongbytes[0] = headerBuffer[9];
-// 				ulongbytes[1] = headerBuffer[8];
-// 				ulongbytes[2] = headerBuffer[7];
-// 				ulongbytes[3] = headerBuffer[6];
-// 				ulongbytes[4] = headerBuffer[5];
-// 				ulongbytes[5] = headerBuffer[4];
-// 				ulongbytes[6] = headerBuffer[3];
-// 				ulongbytes[7] = headerBuffer[2];
-// 				length = BitConverter.ToUInt64(ulongbytes, 0);
-// 			}
+        let! buffer = networkStream.AsyncRead (int length)
+        match key with
+        | Some key ->
+            for i in [0..(int length) - 1] do
+                buffer.[i] <- buffer.[i] ^^^ key.[i % 4]
+        | None -> ()
 
-// 			byte[] key = null;
-// 			if (mask == 1)
-// 				key = new byte[4] { headerBuffer[read - 4], headerBuffer[read - 3], headerBuffer[read - 2], headerBuffer[read - 1] };
-// 			if (wsDecodedStream == null)
-// 				wsDecodedStream = new WsDecodedStream(networkStream, (int)length, key, mask == 1, deflated);
-// 			else
-// 				wsDecodedStream.AddContinuation((int)length, key, mask == 1);
-// 			if (fin)
-// 			{
-// 				var receivedStream = wsDecodedStream;
-// 				wsDecodedStream = null;
-// 				if (opcode != OpCode.Ping)
-// 					await action(receivedStream, null);
-// 				else
-// 					internalSession.SendPong(receivedStream.Payload);
-// 			}
-
-// 			BeginMessageReceiving(action, internalSession);
+        if fin then
+            // TODO: if ping SendPong(receivedStream.Payload)
+            if opcode = Opcode.Text then
+                printfn "Die Wagenladung: %s" <| Encoding.Default.GetString buffer
+            else
+               printfn "Ping"
+            
+        start networkStream
     
     } |> Async.Start   
 
