@@ -24,11 +24,6 @@ let rec start (networkStream: Stream) onReceive onClose buffers deflated =
             | _ -> return 0L 
         }
 
-
-
-        printfn "Fin: %O Länge: %d" fin length
-
-
         let! key = async {
             match mask with
             | true -> 
