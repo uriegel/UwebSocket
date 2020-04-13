@@ -6,7 +6,7 @@ open System.Buffers.Binary
 open System.Text
 open System.IO.Compression
 
-let rec start (networkStream: Stream) onReceive onClose buffers =
+let rec start (networkStream: Stream) onReceive onClose buffers deflated =
     let textReceived fin opcode deflated byte2 = async {
         let mask = byte2 >>> 7 = 1uy
         let lengthCode = byte2 &&& ~~~0x80uy
@@ -76,14 +76,14 @@ let rec start (networkStream: Stream) onReceive onClose buffers =
             else
                 buffers
 
-        start networkStream onReceive onClose buffers
+        start networkStream onReceive onClose buffers deflated
     }
 
     async { 
         try
             let! buffer = networkStream.AsyncRead 2
             let fin = buffer.[0] &&& 0x80uy = 0x80uy
-            let deflated = buffer.[0] &&& 0x40uy = 0x40uy
+            let deflated = deflated || buffer.[0] &&& 0x40uy = 0x40uy
             let opcode: Opcode = LanguagePrimitives.EnumOfValue (buffer.[0] &&& 0xfuy)
             match opcode with
             | Opcode.Ping | Opcode.Pong | Opcode.Text | Opcode.ContinuationFrame 
