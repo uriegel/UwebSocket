@@ -1,6 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <OutputType>dll</OutputType>
+		<AssemblyName>UwebSocket</AssemblyName>
+    	<TargetFramework>netcoreapp3.1</TargetFramework>
+		<Version>1.0.0</Version>
+		<FileVersion>1.0.0.0</FileVersion>
+		<AssemblyVersion>1.0.0.0</AssemblyVersion>
+		<Authors>Uwe Riegel</Authors>
+    	<Company>Uwe Riegel</Company>		
+		<Description>WebSocket suport for UwebServer</Description>
+		<PackageLicenseUrl></PackageLicenseUrl>
+		<PackageProjectUrl>https://github.com/uriegel/UwebSocket</PackageProjectUrl>
+		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+		<PackageLicenseFile>LICENSE</PackageLicenseFile>
+		<PackageTags>FSharp</PackageTags>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>  
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Types.fs" />
@@ -8,6 +22,12 @@
     <Compile Include="Receive.fs" />
     <Compile Include="Websocket.fs" />
   </ItemGroup>
+    <ItemGroup>
+    	<None Include="..\LICENSE">
+      		<Pack>True</Pack>
+      	<PackagePath></PackagePath>
+    	</None>
+  	</ItemGroup>  
   <ItemGroup>
     <PackageReference Include="UwebServer" Version="4.2.2" />
   </ItemGroup>

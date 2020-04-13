@@ -8,14 +8,14 @@ if Environment.CurrentDirectory.Contains "netcoreapp" then
     Environment.CurrentDirectory <- Path.Combine (Environment.CurrentDirectory, "../../../../")
 
 let onSocketSession (session: Types.Session) = 
-    send <- Some session.Send   
     let onReceive payload =
         printfn "Message received: %s" payload
     let onClose () =
         send <- None            
         printfn "Client has disconnected"
+
+    send <- Some (session.Start onReceive onClose)
     
-    onReceive, onClose
 
 let configuration = Configuration.create {
     Configuration.createEmpty() with 
@@ -32,12 +32,12 @@ while running do
     if line.Length = 0 then 
         running <- false
     else
-        match send with
-        | Some send -> 
-            async { 
-                for i in [1..1_000_000] do
+        async { 
+            for i in [1..1_000_000] do
+                match send with
+                | Some send -> 
                     do! send "Das wäre auch schön gewesen"
-            } |> Async.Start
-        | None -> printfn "No connection"
+                | None -> ()
+        }|> Async.Start
 
 server.stop ()

@@ -12,6 +12,5 @@ type Opcode =
     | Pong = 10uy
 
 type Session = {
-    Send: string -> Async<unit>
+    Start: (string -> unit) -> (unit -> unit) -> (string -> Async<unit>) 
 }
-    

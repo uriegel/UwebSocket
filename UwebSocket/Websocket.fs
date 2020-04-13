@@ -7,7 +7,7 @@ open Session
 open Types
 open System.Buffers.Binary
 
-let upgradeWebsocket (onSession: Types.Session -> ((string->unit)*(unit->unit))) (requestSession: RequestSession) secKey = async {
+let upgradeWebsocket (onSession: Types.Session -> unit) (requestSession: RequestSession) secKey = async {
     let secKey = secKey + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
     let sha1 = SHA1.Create ()
     let hashKey = sha1.ComputeHash (Encoding.UTF8.GetBytes secKey)
@@ -35,11 +35,13 @@ let upgradeWebsocket (onSession: Types.Session -> ((string->unit)*(unit->unit)))
     do! requestData.session.networkStream.AsyncWrite (headerBytes, 0, headerBytes.Length)    
     let networkStream = requestSession.HandsOff ()
 
-    let onReceive, onClose = onSession {
-        // TODO: onClose in send
-        Send = Send.send networkStream deflate
+    let sessionStarted onReceive onClose =
+        Receive.start networkStream onReceive onClose [] false
+        Send.send networkStream deflate onClose
+
+    onSession {
+        Start = sessionStarted
     }
-    Receive.start networkStream onReceive onClose [] false
     return true
 }
     
