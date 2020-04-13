@@ -6,20 +6,10 @@ open System.Buffers.Binary
 open System.Text
 open System.IO.Compression
 
-let rec start (networkStream: Stream) =
-    async { 
-        let! buffer = networkStream.AsyncRead 2
-        // TODO: EndofStreamException
-        // TODO: buffer.length = 0: Connection Closed
-        let fin = buffer.[0] &&& 0x80uy = 0x80uy
-        let deflated = buffer.[0] &&& 0x40uy = 0x40uy
-        let opcode: Opcode = LanguagePrimitives.EnumOfValue (buffer.[0] &&& 0xfuy)
-        match opcode with
-        | Opcode.Close -> () // TODO: close ()
-        | Opcode.Ping | Opcode.Pong | Opcode.Text | Opcode.ContinuationFrame -> ()
-        | _ -> () // TODO: close ()
-        let mask = buffer.[1] >>> 7 = 1uy
-        let lengthCode = buffer.[1] &&& ~~~0x80uy
+let rec start (networkStream: Stream) onReceive onClose buffers =
+    let textReceived fin opcode deflated byte2 = async {
+        let mask = byte2 >>> 7 = 1uy
+        let lengthCode = byte2 &&& ~~~0x80uy
         let! length = async {
             match lengthCode with
             | l when l < 126uy -> return int64 l
@@ -31,13 +21,13 @@ let rec start (networkStream: Stream) =
                 let! buffer = networkStream.AsyncRead 8
                 let n = BitConverter.ToUInt64 (buffer, 0)
                 return int64 (BinaryPrimitives.ReverseEndianness n)
-            | 0uy when opcode = Opcode.Ping -> 
-                // TODO: Send pong
-                // await MessageReceivingAsync(action);
-                // return
-                return 0L
-            | _ -> return 0L // TODO: close ()
+            | _ -> return 0L 
         }
+
+
+
+        printfn "Fin: %O Länge: %d" fin length
+
 
         let! key = async {
             match mask with
@@ -54,9 +44,22 @@ let rec start (networkStream: Stream) =
                 buffer.[i] <- buffer.[i] ^^^ key.[i % 4]
         | None -> ()
 
-        if fin then
-            // TODO: if ping SendPong(receivedStream.Payload)
-            if opcode = Opcode.Text then
+        let buffers = buffer :: buffers
+        let buffers =
+            if fin then
+                let completeLength = buffers |> List.fold (fun acc elem -> acc + elem.Length) 0
+                let buffer: byte array = Array.zeroCreate completeLength
+
+                let rec copyBuffers (bufferList: byte array list) pos =
+                    match bufferList with
+                    | head :: tail -> 
+                        let newPos = pos - head.Length
+                        Array.Copy (head, 0, buffer, newPos, head.Length)
+                        copyBuffers tail newPos
+                    | [] -> bufferList
+
+                copyBuffers buffers completeLength |> ignore
+                    
                 let buffer =
                     if deflated then
                         let ms = new MemoryStream (buffer, 0, buffer.Length)
@@ -68,11 +71,30 @@ let rec start (networkStream: Stream) =
                         uncompressd.GetBuffer ()
                     else
                         buffer
-                printfn "Die Wagenladung: %s" <| Encoding.Default.GetString buffer
-            else if opcode = Opcode.Ping then
-               printfn "Ping"
-            
-        start networkStream
+                onReceive <| Encoding.Default.GetString buffer                    
+                []
+            else
+                buffers
+
+        start networkStream onReceive onClose buffers
+    }
+
+    async { 
+        try
+            let! buffer = networkStream.AsyncRead 2
+            let fin = buffer.[0] &&& 0x80uy = 0x80uy
+            let deflated = buffer.[0] &&& 0x40uy = 0x40uy
+            let opcode: Opcode = LanguagePrimitives.EnumOfValue (buffer.[0] &&& 0xfuy)
+            match opcode with
+            | Opcode.Ping | Opcode.Pong | Opcode.Text | Opcode.ContinuationFrame 
+                -> do! textReceived fin opcode deflated buffer.[1] 
+            | Opcode.Close -> onClose ()
+            | _ -> onClose ()
+            with
+            | :? EndOfStreamException -> onClose ()
+            | e -> 
+                printfn "Exception occurred: %O" e
+                onClose ()
     
     } |> Async.Start   
 

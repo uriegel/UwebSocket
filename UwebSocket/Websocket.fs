@@ -7,7 +7,7 @@ open Session
 open Types
 open System.Buffers.Binary
 
-let upgradeWebsocket (onSession: Types.Session -> unit) (requestSession: RequestSession) secKey = async {
+let upgradeWebsocket (onSession: Types.Session -> ((string->unit)*(unit->unit))) (requestSession: RequestSession) secKey = async {
     let secKey = secKey + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
     let sha1 = SHA1.Create ()
     let hashKey = sha1.ComputeHash (Encoding.UTF8.GetBytes secKey)
@@ -27,7 +27,7 @@ let upgradeWebsocket (onSession: Types.Session -> unit) (requestSession: Request
     
     let headers = 
         if extensions |> Array.contains "permessage-deflate" then
-            headers.Add ("Sec-WebSocket-Extensions", "permessage-deflate; client_no_context_takeover")
+            headers.Add ("Sec-WebSocket-Extensions", "permessage-deflate; client_no_context_takeover; server_no_context_takeover")
         else
             headers
 
@@ -35,11 +35,11 @@ let upgradeWebsocket (onSession: Types.Session -> unit) (requestSession: Request
     do! requestData.session.networkStream.AsyncWrite (headerBytes, 0, headerBytes.Length)    
     let networkStream = requestSession.HandsOff ()
     let networkStream = new BufferedStream (networkStream, 8192)
-    Receive.start networkStream
 
-    onSession {
+    let onReceive, onClose = onSession {
         Send = Send.send networkStream
     }
+    Receive.start networkStream onReceive onClose []
     return true
 }
     
@@ -50,7 +50,7 @@ let useWebsocket url onSession (requestSession: RequestSession) = async {
     | _ -> return false    
 }
 
-// TODO: onClose, close OnReceive
+// TODO: close
 // TODO: protocols
 
 
@@ -335,7 +335,6 @@ let useWebsocket url onSession (requestSession: RequestSession) = async {
 // 					if (read == 1)
 // 						read = Read(headerBuffer, 1, 1);
 // 					if (read == 0)
-// 						// TODO:
 // 						throw new ConnectionClosedException();
 // 					await MessageReceiving(headerBuffer, action);
 // 				}
@@ -349,7 +348,6 @@ let useWebsocket url onSession (requestSession: RequestSession) = async {
 // 				}
 // 				catch
 // 				{
-// 					// TODO:
 // 				}
 // 			}, null);
 // 		}
@@ -414,7 +412,6 @@ let useWebsocket url onSession (requestSession: RequestSession) = async {
 // 			if (length == 0)
 // 			{
 // 				//if (opcode == OpCode.Ping)
-// 				// TODO: Send pong
 // 				// await MessageReceivingAsync(action);
 // 				return;
 // 			}
