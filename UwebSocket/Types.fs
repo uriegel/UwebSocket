@@ -1,4 +1,5 @@
 module Types
+open System.IO
 
 type Opcode = 
     // Diese Nachricht muss an die vorherige angehängt werden. Wenn der fin-Wert 0 ist, folgen weitere Fragmente, 
@@ -12,5 +13,5 @@ type Opcode =
     | Pong = 10uy
 
 type Session = {
-    Start: (string -> unit) -> (unit -> unit) -> (string -> Async<unit>) 
+    Start: (Stream -> unit) -> (unit -> unit) -> (byte array -> Async<unit>) 
 }

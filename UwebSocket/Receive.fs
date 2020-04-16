@@ -6,7 +6,7 @@ open System.Buffers.Binary
 open System.Text
 open System.IO.Compression
 
-let rec start (networkStream: Stream) onReceive onClose buffers deflated =
+let rec start (networkStream: Stream) (onReceive: Stream->unit) onClose buffers deflated =
     let textReceived fin opcode deflated byte2 = async {
         let mask = byte2 >>> 7 = 1uy
         let lengthCode = byte2 &&& ~~~0x80uy
@@ -55,18 +55,18 @@ let rec start (networkStream: Stream) onReceive onClose buffers deflated =
 
                 copyBuffers buffers completeLength |> ignore
                     
-                let buffer =
+                let stream =
+                    let ms = new MemoryStream (buffer, 0, buffer.Length)
                     if deflated then
-                        let ms = new MemoryStream (buffer, 0, buffer.Length)
                         let uncompressd = new MemoryStream ()
                         let compressedStream = new DeflateStream (ms, CompressionMode.Decompress, true)
                         compressedStream.CopyTo uncompressd
                         compressedStream.Close ()
-                        uncompressd.Capacity <- int uncompressd.Length
-                        uncompressd.GetBuffer ()
+                        uncompressd.Position <- 0L
+                        uncompressd
                     else
-                        buffer
-                onReceive <| Encoding.Default.GetString buffer                    
+                        ms
+                onReceive stream
                 []
             else
                 buffers

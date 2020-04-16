@@ -5,10 +5,12 @@ ws.onopen = () => ws.send("WS Opened")
 let i = 0
 
 ws.onclose = () => console.log("Closed")
-//ws.onmessage = p => console.log(p.data)
 ws.onmessage = p => { 
-    if (++i == 1_000_000)
+    if (++i == 1_000_000) {
         alert("Fertig" + i)
+        console.log(JSON.parse(p.data))
+        i = 0
+    }
 }
 
 const sender = document.getElementById('sender')

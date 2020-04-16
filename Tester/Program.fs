@@ -1,21 +1,39 @@
 ﻿open System
 open System.IO
 open Websocket
+open System.Text
 
 let mutable send = None
 
 if Environment.CurrentDirectory.Contains "netcoreapp" then
     Environment.CurrentDirectory <- Path.Combine (Environment.CurrentDirectory, "../../../../")
 
+// TODO: FSharpTools
+let serializeToBuffer<'T> (a: 'T) =     
+    use ms = new MemoryStream ()
+    Json.serializeStream ms a
+    ms.Capacity <- int ms.Length
+    ms.GetBuffer ()
+
 let onSocketSession (session: Types.Session) = 
-    let onReceive payload =
-        printfn "Message received: %s" payload
+    let onReceive (payload: Stream) =
+        use tr = new StreamReader (payload)
+        printfn "Message received: %s" <| tr.ReadToEnd ()
     let onClose () =
         send <- None            
         printfn "Client has disconnected"
 
-    send <- Some (session.Start onReceive onClose)
+    let sendBytes = session.Start onReceive onClose
     
+    // let getBytes (text: string) = Encoding.Default.GetBytes text
+    // let sendString = getBytes >> sendBytes
+    // send <- Some sendString
+
+    let readStream (stream: Stream) = 
+        use br = new BinaryReader (stream)
+        br.ReadBytes(int stream.Length)
+    let sendObject = serializeToBuffer >> sendBytes
+    send <- Some sendObject
 
 let configuration = Configuration.create {
     Configuration.createEmpty() with 
@@ -36,7 +54,8 @@ while running do
             for i in [1..1_000_000] do
                 match send with
                 | Some send -> 
-                    do! send "Das wäre auch schön gewesen"
+                    //do! send "Das wäre auch schön gewesen"
+                    do! send {| name = "Der schöne Name"; number = 12345 |}
                 | None -> ()
         }|> Async.Start
 
