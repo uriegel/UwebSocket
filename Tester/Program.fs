@@ -9,7 +9,7 @@ if Environment.CurrentDirectory.Contains "netcoreapp" then
     Environment.CurrentDirectory <- Path.Combine (Environment.CurrentDirectory, "../../../../")
 
 // TODO: FSharpTools
-let serializeToBuffer<'T> (a: 'T) =     
+let serializeToBuffer a =     
     use ms = new MemoryStream ()
     Json.serializeStream ms a
     ms.Capacity <- int ms.Length
