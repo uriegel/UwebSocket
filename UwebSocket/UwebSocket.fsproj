@@ -30,6 +30,6 @@
     	</None>
   	</ItemGroup>  
   <ItemGroup>
-    <PackageReference Include="UwebServer" Version="4.2.2" />
+	<PackageReference Include="UwebServer" Version="4.2.2" />
   </ItemGroup>
 </Project>

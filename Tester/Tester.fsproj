@@ -14,5 +14,6 @@
   <ItemGroup>
     <PackageReference Include="UwebServer" Version="4.2.2" />
     <PackageReference Include="UwebStatic" Version="1.0.1" />
+    <PackageReference Include="FSharpTools" Version="2.3.1" />
   </ItemGroup>
 </Project>

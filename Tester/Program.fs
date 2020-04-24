@@ -8,13 +8,6 @@ let mutable send = None
 if Environment.CurrentDirectory.Contains "netcoreapp" then
     Environment.CurrentDirectory <- Path.Combine (Environment.CurrentDirectory, "../../../../")
 
-// TODO: FSharpTools
-let serializeToBuffer a =     
-    use ms = new MemoryStream ()
-    Json.serializeStream ms a
-    ms.Capacity <- int ms.Length
-    ms.GetBuffer ()
-
 let onSocketSession (session: Types.Session) = 
     let onReceive (payload: Stream) =
         use tr = new StreamReader (payload)
@@ -32,7 +25,7 @@ let onSocketSession (session: Types.Session) =
     let readStream (stream: Stream) = 
         use br = new BinaryReader (stream)
         br.ReadBytes(int stream.Length)
-    let sendObject = serializeToBuffer >> sendBytes
+    let sendObject = Json.serializeToBuffer >> sendBytes
     send <- Some sendObject
 
 let configuration = Configuration.create {
