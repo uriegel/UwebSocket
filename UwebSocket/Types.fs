@@ -13,5 +13,5 @@ type Opcode =
     | Pong = 10uy
 
 type Session = {
-    Start: (Stream -> unit) -> (unit -> unit) -> (byte array -> Async<unit>) 
+    Start: (Stream -> unit) -> (unit -> unit) -> (byte array -> unit) 
 }

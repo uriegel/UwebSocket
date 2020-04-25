@@ -43,13 +43,11 @@ while running do
     if line.Length = 0 then 
         running <- false
     else
-        async { 
-            for i in [1..1_000_000] do
-                match send with
-                | Some send -> 
-                    //do! send "Das wäre auch schön gewesen"
-                    do! send {| name = "Der schöne Name"; number = 12345 |}
-                | None -> ()
-        }|> Async.Start
+        for i in [1..1_000_000] do
+            match send with
+            | Some send -> 
+                send "Das wäre auch schön gewesen"
+                //send {| name = "Der schöne Name"; number = 12345 |}
+            | None -> ()
 
 server.stop ()

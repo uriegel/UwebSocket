@@ -10,7 +10,7 @@ let private locker = new SemaphoreSlim (1)
 let private minSizeForDeflate = 50
 let private bFinal = 0uy
 
-let send (networkStream: Stream) deflate onClose (payloadBuffer: byte array) = async {
+let asyncSend (networkStream: Stream) deflate onClose (payloadBuffer: byte array) = async {
     do! locker.WaitAsync () |> Async.AwaitTask
     try 
         try
@@ -55,3 +55,8 @@ let send (networkStream: Stream) deflate onClose (payloadBuffer: byte array) = a
     finally
         locker.Release () |> ignore
 }
+
+let send (networkStream: Stream) deflate onClose (payloadBuffer: byte array) = 
+    async {
+        do! asyncSend networkStream deflate onClose payloadBuffer
+    } |> Async.StartImmediate
