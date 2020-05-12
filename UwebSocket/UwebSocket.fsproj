@@ -9,7 +9,7 @@
 		<AssemblyVersion>3.0.0.0</AssemblyVersion>
 		<Authors>Uwe Riegel</Authors>
     	<Company>Uwe Riegel</Company>		
-		<Description>WebSocket suport for UwebServer</Description>
+		<Description>WebSocket support for UwebServer</Description>
 		<PackageLicenseUrl></PackageLicenseUrl>
 		<PackageProjectUrl>https://github.com/uriegel/UwebSocket</PackageProjectUrl>
 		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>

@@ -1,5 +1,5 @@
 //const ws = new WebSocket("ws://ubuntu:9865/websocketurl", ["Eigenes", "Zweites"])
-const ws = new WebSocket("ws://frisco:9865/websocketurl")
+const ws = new WebSocket("ws://frisco:9866/websocketurl")
 
 ws.onopen = () => ws.send("WS Opened")
 let i = 0
