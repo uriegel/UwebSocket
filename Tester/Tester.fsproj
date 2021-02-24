@@ -1,7 +1,7 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../UwebSocket/UwebSocket.fsproj">
@@ -12,8 +12,11 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="UwebServer" Version="6.0.0" />
-    <PackageReference Include="UwebStatic" Version="1.0.1" />
-    <PackageReference Include="FSharpTools" Version="3.0.1" />
+    <PackageReference Include="UwebServer" Version="7.0.0" />
+    <PackageReference Include="UwebStatic" Version="3.0.0" />
+    <PackageReference Include="FSharpTools" Version="4.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="5.0.1" />
   </ItemGroup>
 </Project>
